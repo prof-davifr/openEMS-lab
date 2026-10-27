@@ -19,7 +19,7 @@ def pasta_base():
     if escolhida:
         return Path(escolhida)
     base = Path.home() / "openEMS-simulacoes"
-    if not str(base).isascii():
+    if os.name == "nt" and not str(base).isascii():
         publica = os.environ.get("PUBLIC") or tempfile.gettempdir()
         base = Path(publica) / "openEMS-simulacoes"
     return base

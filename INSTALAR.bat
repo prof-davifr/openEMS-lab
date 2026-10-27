@@ -12,7 +12,7 @@ setlocal EnableExtensions
 title Instalador do openEMS Lab
 cd /d "%~dp0"
 
-set "REPO=prof-davifr/openEMS-win"
+set "REPO=prof-davifr/openEMS-lab"
 set "PACOTE=openEMS-lab-windows.zip"
 set "URL=https://github.com/%REPO%/releases/latest/download/%PACOTE%"
 set "DESTINO=%LOCALAPPDATA%\openEMS-lab"

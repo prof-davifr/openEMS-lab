@@ -43,6 +43,7 @@ Na ressonância, a antena aceita a energia e o |S11| cai. Abaixo de −10 dB, me
 ## Para saber mais
 
 - Documentação oficial: <https://docs.openems.de>
-- Tutoriais em Python: pasta `openEMS\python\Tutorials` dentro de `%LOCALAPPDATA%\openEMS-lab`
+- Tutoriais em Python: pasta `openEMS\python\Tutorials` dentro de `%LOCALAPPDATA%\openEMS-lab` (Windows)
+  ou <https://github.com/thliebig/openEMS/tree/master/python/Tutorials>
 - C. A. Balanis, *Antenna Theory*, cap. 14 (antenas patch)
 - R. Zoughi, *Microwave Non-Destructive Testing and Evaluation* (2000)

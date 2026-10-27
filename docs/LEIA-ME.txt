@@ -17,7 +17,7 @@ Conteudo desta pasta:
 Os seus notebooks ficam em Documentos\openEMS-notebooks.
 Esta pasta pode ser apagada e instalada de novo sem perder os seus notebooks.
 
-Instrucoes e problemas comuns: https://github.com/prof-davifr/openEMS-win
+Instrucoes e problemas comuns: https://github.com/prof-davifr/openEMS-lab
 
 Licencas: o openEMS (GPL-3.0) e o CSXCAD (LGPL-3.0) sao de Thorsten Liebig e
 colaboradores. Codigo-fonte: https://github.com/thliebig/openEMS-Project

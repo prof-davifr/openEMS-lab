@@ -1,8 +1,9 @@
-name: Pacote para Windows
+name: Pacote
 
-# Monta o pacote portátil (Python + openEMS + Jupyter + notebooks), testa num
-# Windows real a partir de uma pasta com espaço e acento, e publica um release
-# quando chega uma tag v*.
+# Windows: monta o pacote portátil (Python + openEMS + Jupyter + notebooks) e
+# testa num Windows real a partir de uma pasta com espaço e acento.
+# Linux: roda o instalar.sh num Linux Mint limpo, como um usuário comum.
+# Numa tag v*, publica o release com os instaladores dos dois sistemas.
 
 on:
   push:
@@ -22,7 +23,7 @@ env:
   PACOTE: openEMS-lab-windows.zip
 
 jobs:
-  pacote:
+  windows:
     runs-on: windows-latest
     defaults:
       run:
@@ -139,18 +140,74 @@ jobs:
             INSTALAR.bat
           retention-days: 14
 
+  linux:
+    runs-on: ubuntu-latest
+    container: linuxmintd/mint22.3-amd64
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Criar um usuário comum com sudo
+        run: |
+          apt-get update -q
+          DEBIAN_FRONTEND=noninteractive apt-get install -y -q sudo
+          useradd -m -s /bin/bash aluno
+          echo "aluno ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/aluno
+          cp -r . /home/aluno/openEMS-lab
+          chown -R aluno: /home/aluno/openEMS-lab
+
+      - name: Instalar como o aluno
+        run: |
+          sudo -u aluno -H env EMSLAB_TESTE=1 EMSLAB_SEM_JANELA=1 MPLBACKEND=Agg \
+            bash /home/aluno/openEMS-lab/instalar.sh
+          test -f /home/aluno/.local/share/applications/openems-lab.desktop
+
+      - name: Rodar os notebooks no pacote instalado
+        run: |
+          sudo -u aluno -H env EMSLAB_SEM_JANELA=1 MPLBACKEND=Agg bash -ec '
+            source ~/.local/share/openEMS-lab/scripts/ambiente.sh
+            cd ~
+            for n in 00 01 02 03; do
+              "$PYTHON" -m nbconvert --to notebook --execute --ExecutePreprocessor.timeout=1800 \
+                --output-dir saida "$RAIZ"/notebooks/${n}_*.ipynb
+            done'
+
+  release:
+    needs: [windows, linux]
+    if: github.ref_type == 'tag'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/download-artifact@v8
+        with:
+          name: openEMS-lab-windows
+          path: windows
+
+      - name: Fixar a versão no instalar.sh
+        run: |
+          sed -i "s/^LAB_VERSAO=\"main\"/LAB_VERSAO=\"$GITHUB_REF_NAME\"/" instalar.sh
+          grep -q "^LAB_VERSAO=\"$GITHUB_REF_NAME\"" instalar.sh
+
       - name: Publicar release
-        if: github.ref_type == 'tag'
         uses: softprops/action-gh-release@v3
         with:
           files: |
-            ${{ env.PACOTE }}
-            ${{ env.PACOTE }}.sha256
-            INSTALAR.bat
+            windows/${{ env.PACOTE }}
+            windows/${{ env.PACOTE }}.sha256
+            windows/INSTALAR.bat
+            instalar.sh
           body: |
-            Pacote do openEMS para Windows, sem administrador.
+            openEMS Lab: openEMS, Python, JupyterLab e os notebooks do curso.
 
-            **Para instalar:** baixe `INSTALAR.bat`, dê dois cliques e siga as mensagens.
+            **Windows:** baixe `INSTALAR.bat`, dê dois cliques e siga as mensagens.
+
+            **Linux (Mint, Ubuntu):** abra um terminal, cole o comando abaixo e tecle Enter:
+
+            ```
+            curl -fsSL https://github.com/${{ github.repository }}/releases/latest/download/instalar.sh | bash
+            ```
+
             Veja as instruções completas no [README](https://github.com/${{ github.repository }}#readme).
-
-            Conteúdo: openEMS ${{ env.OPENEMS_TAG }}, Python ${{ env.PYTHON_VERSION }}, JupyterLab e os notebooks do curso.

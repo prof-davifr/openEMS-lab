@@ -9,6 +9,7 @@ import traceback
 OK = "[ OK ]"
 ERRO = "[ERRO]"
 AVISO = "[AVISO]"
+REINSTALAR = "Rode INSTALAR.bat de novo." if os.name == "nt" else "Rode o instalador (instalar.sh) de novo."
 
 
 def _linha(estado, texto):
@@ -24,10 +25,10 @@ def verificar(simular=True):
     if os.name == "nt":
         if not instalacao:
             _linha(ERRO, "A variável CSXCAD_INSTALL_PATH não existe. Abra o Jupyter pelo atalho "
-                         "'openEMS - Simulações' na área de trabalho.")
+                         "'openEMS Lab' na Área de Trabalho.")
             return False
         if not os.path.isfile(os.path.join(instalacao, "openEMS.exe")):
-            _linha(ERRO, f"openEMS.exe não está em {instalacao}. Rode INSTALAR.bat de novo.")
+            _linha(ERRO, f"openEMS.exe não está em {instalacao}. {REINSTALAR}")
             return False
         _linha(OK, f"openEMS em {instalacao}")
 
@@ -37,8 +38,8 @@ def verificar(simular=True):
         from openEMS import openEMS as _motor  # noqa: F401
     except ImportError as erro:
         _linha(ERRO, f"Não foi possível carregar o openEMS no Python: {erro}")
-        _linha(ERRO, "Rode INSTALAR.bat de novo. Se o erro continuar, mande o arquivo "
-                     "instalacao.log ao orientador.")
+        _linha(ERRO, f"{REINSTALAR} Se o erro continuar, mande o registro da "
+                     "instalação (openEMS-lab-instalacao.log) ao orientador.")
         return False
     _linha(OK, f"Módulos CSXCAD {CSXCAD.__version__} e openEMS carregados")
 

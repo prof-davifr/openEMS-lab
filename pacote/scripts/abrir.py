@@ -13,11 +13,31 @@ from pathlib import Path
 
 RAIZ = Path(__file__).resolve().parent.parent
 NOME_ATALHO = "openEMS Lab.lnk"
+ITEM_DE_MENU = """[Desktop Entry]
+Type=Application
+Name=openEMS Lab
+Comment=Abre o Jupyter com o openEMS
+Exec="{abrir}"
+Terminal=true
+Icon=applications-science
+Categories=Education;Science;
+"""
 
 
-def pasta_especial(csidl, padrao):
-    """Pasta do Windows (Documentos, Área de Trabalho), mesmo se estiver no OneDrive."""
+def pasta_especial(csidl, xdg, padrao):
+    """Pasta do usuário (Documentos, Área de Trabalho) no idioma do sistema.
+
+    No Windows, acha a pasta mesmo se ela estiver no OneDrive. No Linux, usa o
+    xdg-user-dir, que dá "Documentos" e "Área de Trabalho" num sistema em português.
+    """
     if os.name != "nt":
+        try:
+            saida = subprocess.run(["xdg-user-dir", xdg], capture_output=True, text=True).stdout.strip()
+        except OSError:
+            return padrao
+        # sem configuração, o xdg-user-dir responde com a pasta pessoal
+        if saida and Path(saida) != Path.home():
+            return Path(saida)
         return padrao
     import ctypes
     from ctypes import wintypes
@@ -29,7 +49,7 @@ def pasta_especial(csidl, padrao):
 
 
 def pasta_notebooks():
-    return pasta_especial(0x0005, Path.home() / "Documents") / "openEMS-notebooks"
+    return pasta_especial(0x0005, "DOCUMENTS", Path.home() / "Documents") / "openEMS-notebooks"
 
 
 def copiar_notebooks(destino):
@@ -45,10 +65,10 @@ def copiar_notebooks(destino):
 
 
 def criar_atalho():
-    """Cria o atalho 'openEMS Lab' na Área de Trabalho."""
+    """Cria o atalho 'openEMS Lab' na Área de Trabalho (e no menu, no Linux)."""
     if os.name != "nt":
-        return None
-    area_de_trabalho = pasta_especial(0x0010, Path.home() / "Desktop")
+        return criar_atalho_linux()
+    area_de_trabalho = pasta_especial(0x0010, "DESKTOP", Path.home() / "Desktop")
     area_de_trabalho.mkdir(parents=True, exist_ok=True)
     atalho = area_de_trabalho / NOME_ATALHO
     # os caminhos vão por variáveis de ambiente, para não ter problema com espaços e acentos
@@ -67,6 +87,27 @@ def criar_atalho():
         print("Aviso: não foi possível criar o atalho na Área de Trabalho.")
         print(resultado.stderr.strip())
         return None
+    return atalho
+
+
+def criar_atalho_linux():
+    texto = ITEM_DE_MENU.format(abrir=RAIZ / "abrir.sh")
+
+    dados = Path(os.environ.get("XDG_DATA_HOME") or Path.home() / ".local" / "share")
+    menu = dados / "applications"
+    menu.mkdir(parents=True, exist_ok=True)
+    (menu / "openems-lab.desktop").write_text(texto, encoding="utf-8")
+
+    area_de_trabalho = pasta_especial(None, "DESKTOP", Path.home() / "Desktop")
+    area_de_trabalho.mkdir(parents=True, exist_ok=True)
+    atalho = area_de_trabalho / "openems-lab.desktop"
+    atalho.write_text(texto, encoding="utf-8")
+    atalho.chmod(0o755)
+    # o Cinnamon e o GNOME só abrem atalhos da Área de Trabalho marcados como confiáveis
+    try:
+        subprocess.run(["gio", "set", str(atalho), "metadata::trusted", "true"], capture_output=True)
+    except OSError:
+        pass
     return atalho
 
 
